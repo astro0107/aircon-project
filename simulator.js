@@ -1,9 +1,20 @@
 // simulator.js
-// Fake sensors: publishes room readings over MQTT
+// Fake sensors: publishes room readings to AWS IoT Core over MQTT with TLS certs
 
 const mqtt = require('mqtt');
+const fs = require('fs');
 
-const client = mqtt.connect('mqtt://test.mosquitto.org:1883');
+const AWS_ENDPOINT = 'a17rdskbrdezz5-ats.iot.us-east-1.amazonaws.com';
+
+const client = mqtt.connect({
+  host: AWS_ENDPOINT,
+  port: 8883,
+  protocol: 'mqtts',
+  key: fs.readFileSync('./certs/private.pem.key'),
+  cert: fs.readFileSync('./certs/certificate.pem.crt'),
+  ca: fs.readFileSync('./certs/AmazonRootCA1.pem'),
+  clientId: 'aircon-floor-gateway-sim'
+});
 
 const rooms = [
   { room_id: "room-101", floor: 1 },
@@ -14,7 +25,7 @@ const rooms = [
 ];
 
 client.on('connect', () => {
-  console.log('Connected to MQTT broker');
+  console.log('Connected to AWS IoT Core');
 
   setInterval(() => {
     rooms.forEach((room) => {
@@ -35,5 +46,5 @@ client.on('connect', () => {
 });
 
 client.on('error', (err) => {
-  console.error('MQTT error:', err);
+  console.error('AWS IoT connection error:', err);
 });
